@@ -16,6 +16,7 @@ import { Message } from "./chatapp.schema.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// required for ES modules (__dirname)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -26,13 +27,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// serve static files
 app.use(express.static(path.join(__dirname, "public")));
 
 /* =========================
-   HEALTH CHECK (IMPORTANT)
+   HOMEPAGE ROUTE (FIXES Cannot GET /)
 ========================= */
 app.get("/", (req, res) => {
-  res.send("ChatterUp backend is running 🚀");
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 /* =========================
@@ -77,7 +79,7 @@ const io = new Server(server, {
 let users = {};
 
 io.on("connection", socket => {
-  // Load last 50 messages
+  // load last 50 messages
   Message.find()
     .sort({ createdAt: 1 })
     .limit(50)
