@@ -5,10 +5,13 @@ dotenv.config();
 
 export const connectData = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("Successfully connected to database");
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 20000, // wait for Atlas primary
+    });
+
+    console.log("MongoDB connected");
   } catch (err) {
-    console.error("Failed to connect to database", err);
-    process.exit(1); // stop app if DB fails
+    console.error("MongoDB connection error:", err.message);
+    // ❌ DO NOT exit the process on Render
   }
 };
