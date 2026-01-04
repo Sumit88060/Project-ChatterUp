@@ -16,7 +16,7 @@ import { Message } from "./chatapp.schema.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// required for ES modules (__dirname)
+// required for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -27,15 +27,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// serve static files
+// ✅ SERVE STATIC FILES (public/index.html)
 app.use(express.static(path.join(__dirname, "public")));
-
-/* =========================
-   HOMEPAGE ROUTE (FIXES Cannot GET /)
-========================= */
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
 
 /* =========================
    UPLOADS SETUP
@@ -60,7 +53,6 @@ app.post("/upload-avatar", upload.single("avatar"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-
   res.json({ imageUrl: `/uploads/${req.file.filename}` });
 });
 
@@ -79,7 +71,7 @@ const io = new Server(server, {
 let users = {};
 
 io.on("connection", socket => {
-  // load last 50 messages
+  // Load last 50 messages
   Message.find()
     .sort({ createdAt: 1 })
     .limit(50)
@@ -132,7 +124,7 @@ io.on("connection", socket => {
 });
 
 /* =========================
-   START SERVER SAFELY
+   START SERVER (RENDER SAFE)
 ========================= */
 const startServer = async () => {
   try {
