@@ -1,14 +1,14 @@
 {
-  "name": "socket-app",
+  "name": "chatterup",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
+    "express": "^4.19.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0",
     "mongoose": "^8.15.0",
     "multer": "^2.0.0",
     "socket.io": "^4.8.1"
