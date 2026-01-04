@@ -1,2 +1,23 @@
-# Project-ChatterUp
-A real-time chat app I built using Node.js, Express, Socket.io, and MongoDB! Now it has: Real-time messaging with Socket.io Profile picture uploads for users Typing indicators + join/leave sounds Chat history stored in MongoDB A clean, minimal UI with HTML/CSS/JS  live “Active Now” panel that shows who’s online in real time
+# Project ChatterUp 💬
+
+A real-time chat application built using Node.js, Express, Socket.io, and MongoDB.
+
+## Features
+- 🔴 Real-time messaging with Socket.io
+- 👤 Live online users indicator
+- 🖼️ Profile picture uploads
+- ⌨️ Typing indicators
+- 🔔 Join / leave notifications
+- 🗂️ Chat history stored in MongoDB
+
+## Tech Stack
+- Node.js
+- Express
+- Socket.io
+- MongoDB
+- HTML, CSS, JavaScript
+
+## Setup Instructions
+```bash
+npm install
+npm start
