@@ -27,13 +27,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ SERVE STATIC FILES (public/index.html)
-app.use(express.static(path.join(__dirname, "public")));
+// ✅ SERVE ROOT FILES (index.html, style.css)
+app.use(express.static(__dirname));
+
+/* =========================
+   HOMEPAGE
+========================= */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
 /* =========================
    UPLOADS SETUP
 ========================= */
-const uploadsPath = path.join(__dirname, "public", "uploads");
+const uploadsPath = path.join(__dirname, "uploads");
 
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
@@ -71,7 +78,7 @@ const io = new Server(server, {
 let users = {};
 
 io.on("connection", socket => {
-  // Load last 50 messages
+  // load last 50 messages
   Message.find()
     .sort({ createdAt: 1 })
     .limit(50)
@@ -86,7 +93,7 @@ io.on("connection", socket => {
       username: "ChatterUp",
       message: `${username} joined the chat`,
       time: new Date().toLocaleTimeString(),
-      profile: "/uploads/default.webp"
+      profile: "/default.webp"
     });
   });
 
@@ -95,7 +102,7 @@ io.on("connection", socket => {
       username: data.user,
       message: data.text,
       time: new Date().toLocaleTimeString(),
-      profile: data.profile || "/uploads/default.webp"
+      profile: data.profile || "/default.webp"
     });
 
     await msg.save();
@@ -117,7 +124,7 @@ io.on("connection", socket => {
         username: "ChatterUp",
         message: `${leftUser} left the chat`,
         time: new Date().toLocaleTimeString(),
-        profile: "/uploads/default.webp"
+        profile: "/default.webp"
       });
     }
   });
