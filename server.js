@@ -4,16 +4,23 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { connectData } from './db.config.js';
 import { Message } from './chatapp.schema.js';
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const app = express();
 
 let userAvatars = {};
 let users = {};
 
+app.use(cors());
 app.use(express.static('public'));
+
+// ensure uploads folder exists
+if (!fs.existsSync('./public/uploads')) {
+  fs.mkdirSync('./public/uploads', { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: './public/uploads',
@@ -29,27 +36,18 @@ app.post('/upload-avatar', upload.single('avatar'), (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
   const imageUrl = `/uploads/${req.file.filename}`;
-  console.log('🛣️  hit /upload-avatar, saved to', imageUrl);
   return res.json({ imageUrl });
 });
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET','POST'] }
+  cors: { origin: '*', methods: ['GET', 'POST'] }
 });
 
 io.on('connection', socket => {
-  console.log('User connected:', socket.id);
-
   Message.find().sort({ createdAt: 1 }).limit(50)
     .then(messages => socket.emit('load-messages', messages));
 
-    socket.on('avatar-changed', (newUrl) => {
-    if (users[socket.id]) {
-      users[socket.id].profile = newUrl;
-      console.log(`Socket ${socket.id} changed avatar to`, newUrl);
-    }
-  });
   socket.on('join', username => {
     const profile = userAvatars[username] || '/uploads/default.webp';
     users[socket.id] = { username, profile };
@@ -64,7 +62,6 @@ io.on('connection', socket => {
   });
 
   socket.on('send-message', async data => {
-    console.log('Received message on server:', data);
     const msg = new Message({
       username: data.user,
       message: data.text,
@@ -94,8 +91,8 @@ io.on('connection', socket => {
   });
 });
 
+connectData();
 
 server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  connectData();
+  console.log(`Server running on port ${PORT}`);
 });
