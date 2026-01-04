@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Chat-Application</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="main-container">
+    <div class="chat-area">
+      <div class="header">
+        <span id="welcome-text"></span>
+        <span id="typing-text"></span>
+      </div>
+      <div id="messages" class="messages-box"></div>
+      <form id="chat-form" class="chat-form">
+        <input id="msg" type="text" placeholder="Enter your message…" autocomplete="off">
+        <button type="submit">Send</button>
+      </form>
+    </div>
+
+    <div class="sidebar">
+      <!-- Profile upload panel -->
+      <div class="profile-panel">
+        <img id="my-avatar" src="/uploads/default.webp" class="profile-pic-large" alt="My avatar">
+        <input type="file" id="avatar-input" accept="image/*">
+      </div>
+
+      <div class="users-header">Connected users <span id="count">0</span></div>
+      <ul id="users"></ul>
+    </div>
+  </div>
+
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+  <script>
+    console.log('chat script loaded');
+
+    const socket = io.connect('http://localhost:3000');
+    const username = prompt('Enter your name:');
+let profilePic = '/uploads/default.webp';
+   
+    const avatarInput = document.getElementById('avatar-input');
+    const myAvatarImg = document.getElementById('my-avatar');
+
+    avatarInput.addEventListener('change', async () => {
+      console.log('avatarInput change fired');
+      const file = avatarInput.files[0];
+      console.log('Selected file:', file);
+      if (!file) return;
+
+      const form = new FormData();
+      form.append('avatar', file);
+      form.append('username', username);
+
+      const res = await fetch('/upload-avatar', { method: 'POST', body: form });
+      if (!res.ok) {
+        console.error('Upload failed', await res.text());
+        return;
+      }
+
+      const { imageUrl } = await res.json();
+      console.log('Got new imageUrl:', imageUrl);
+      myAvatarImg.src = imageUrl;
+      profilePic = imageUrl;
+
+      socket.emit('avatar-changed', imageUrl);
+    });
+
+   
+    socket.emit('join', username);
+    document.getElementById('welcome-text').innerText = `Welcome ${username}`;
+
+   
+    document.getElementById('chat-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const msgInput = document.getElementById('msg');
+      const text = msgInput.value.trim();
+      if (!text) return;
+      socket.emit('send-message', { user: username, text, profile: profilePic });
+      msgInput.value = '';
+    });
+
+  
+    function renderMessage(data) {
+      const msgBox = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.classList.add('message', data.username === username ? 'sent' : 'received');
+
+      div.innerHTML = `
+        <img src="${data.profile}" class="profile-pic" alt="avatar">
+        <div class="bubble">
+          <strong>${data.username}</strong><br>
+          ${data.message}<br>
+          <small>${data.time}</small>
+        </div>
+      `;
+      msgBox.appendChild(div);
+      msgBox.scrollTop = msgBox.scrollHeight;
+    }
+
+    
+    socket.on('message', renderMessage);
+    socket.on('load-messages', msgs => msgs.forEach(renderMessage));
+    socket.on('typing', name => {
+      const t = document.getElementById('typing-text');
+      t.textContent = `${name} is typing…`;
+      setTimeout(() => t.textContent = '', 1000);
+    });
+    socket.on('user-list', users => {
+      document.getElementById('count').innerText = users.length;
+      const ul = document.getElementById('users');
+      ul.innerHTML = '';
+      users.forEach(u => {
+        const li = document.createElement('li');
+        li.innerText = u;
+        ul.appendChild(li);
+      });
+    });
+
+    document.getElementById('msg').addEventListener('input', () => {
+      socket.emit('typing', username);
+    });
+  </script>
+</body>
+</html>
