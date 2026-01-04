@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,169 +8,81 @@
 </head>
 <body>
 
-  <div class="main-container">
-    <!-- CHAT AREA -->
-    <div class="chat-area">
-      <div class="header">
-        <span id="welcome-text"></span>
-        <span id="typing-text"></span>
-      </div>
-
-      <div id="messages" class="messages-box"></div>
-
-      <form id="chat-form" class="chat-form">
-        <input
-          id="msg"
-          type="text"
-          placeholder="Enter your message…"
-          autocomplete="off"
-          required
-        />
-        <button type="submit">Send</button>
-      </form>
+<div class="main-container">
+  <div class="chat-area">
+    <div class="header">
+      <span id="welcome-text"></span>
+      <span id="typing-text"></span>
     </div>
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <div class="profile-panel">
-        <img
-          id="my-avatar"
-          src="/uploads/default.webp"
-          class="profile-pic-large"
-          alt="My Avatar"
-        />
-        <input type="file" id="avatar-input" accept="image/*" />
-      </div>
+    <div id="messages" class="messages-box"></div>
 
-      <div class="users-header">
-        Connected users <span id="count">0</span>
-      </div>
-      <ul id="users"></ul>
-    </div>
+    <form id="chat-form">
+      <input id="msg" type="text" placeholder="Enter message..." required />
+      <button type="submit">Send</button>
+    </form>
   </div>
 
-  <!-- SOCKET.IO CLIENT (NO localhost ❌) -->
-  <script src="/socket.io/socket.io.js"></script>
+  <div class="sidebar">
+    <img id="my-avatar" src="/default.webp" />
+    <input type="file" id="avatar-input" accept="image/*" />
 
-  <script>
-    /* =========================
-       SOCKET CONNECTION
-    ========================== */
-    const socket = io(); // ✅ works locally + online
+    <h3>Users (<span id="count">0</span>)</h3>
+    <ul id="users"></ul>
+  </div>
+</div>
 
-    const username = prompt("Enter your name:");
-    let profilePic = "/uploads/default.webp";
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const username = prompt("Enter your name:");
+  let profilePic = "/default.webp";
 
-    document.getElementById("welcome-text").innerText =
-      "Welcome " + username;
+  document.getElementById("welcome-text").innerText = "Welcome " + username;
+  socket.emit("join", username);
 
-    /* =========================
-       AVATAR UPLOAD
-    ========================== */
-    const avatarInput = document.getElementById("avatar-input");
-    const myAvatarImg = document.getElementById("my-avatar");
+  document.getElementById("chat-form").addEventListener("submit", e => {
+    e.preventDefault();
+    const input = document.getElementById("msg");
+    socket.emit("send-message", {
+      user: username,
+      text: input.value,
+      profile: profilePic
+    });
+    input.value = "";
+  });
 
-    avatarInput.addEventListener("change", async () => {
-      const file = avatarInput.files[0];
-      if (!file) return;
+  socket.on("message", data => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${data.username}</strong>: ${data.message}`;
+    document.getElementById("messages").appendChild(div);
+  });
 
-      const formData = new FormData();
-      formData.append("avatar", file);
+  socket.on("user-list", users => {
+    document.getElementById("count").innerText = users.length;
+    const ul = document.getElementById("users");
+    ul.innerHTML = "";
+    users.forEach(u => {
+      const li = document.createElement("li");
+      li.innerText = u;
+      ul.appendChild(li);
+    });
+  });
 
-      try {
-        const res = await fetch("/upload-avatar", {
-          method: "POST",
-          body: formData
-        });
+  document.getElementById("avatar-input").addEventListener("change", async e => {
+    const formData = new FormData();
+    formData.append("avatar", e.target.files[0]);
 
-        const data = await res.json();
-        myAvatarImg.src = data.imageUrl;
-        profilePic = data.imageUrl;
-
-        socket.emit("avatar-changed", profilePic);
-      } catch (err) {
-        console.error("Avatar upload failed", err);
-      }
+    const res = await fetch("/upload-avatar", {
+      method: "POST",
+      body: formData
     });
 
-    /* =========================
-       JOIN CHAT
-    ========================== */
-    socket.emit("join", username);
+    const data = await res.json();
+    document.getElementById("my-avatar").src = data.imageUrl;
+    profilePic = data.imageUrl;
+  });
+</script>
 
-    /* =========================
-       SEND MESSAGE
-    ========================== */
-    const form = document.getElementById("chat-form");
-    const msgInput = document.getElementById("msg");
-
-    form.addEventListener("submit", e => {
-      e.preventDefault();
-      const text = msgInput.value.trim();
-      if (!text) return;
-
-      socket.emit("send-message", {
-        user: username,
-        text,
-        profile: profilePic
-      });
-
-      msgInput.value = "";
-    });
-
-    /* =========================
-       RENDER MESSAGE
-    ========================== */
-    function renderMessage(data) {
-      const box = document.getElementById("messages");
-      const div = document.createElement("div");
-
-      div.className =
-        "message " +
-        (data.username === username ? "sent" : "received");
-
-      div.innerHTML = `
-        <img src="${data.profile}" class="profile-pic" />
-        <div class="bubble">
-          <strong>${data.username}</strong><br />
-          ${data.message}<br />
-          <small>${data.time}</small>
-        </div>
-      `;
-
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
-    }
-
-    /* =========================
-       SOCKET EVENTS
-    ========================== */
-    socket.on("message", renderMessage);
-
-    socket.on("load-messages", messages => {
-      messages.forEach(renderMessage);
-    });
-
-    socket.on("typing", name => {
-      const t = document.getElementById("typing-text");
-      t.innerText = name + " is typing...";
-      setTimeout(() => (t.innerText = ""), 1000);
-    });
-
-    socket.on("user-list", users => {
-      document.getElementById("count").innerText = users.length;
-      const ul = document.getElementById("users");
-      ul.innerHTML = "";
-      users.forEach(u => {
-        const li = document.createElement("li");
-        li.innerText = u;
-        ul.appendChild(li);
-      });
-    });
-
-    msgInput.addEventListener("input", () => {
-      socket.emit("typing", username);
-    });
-  </script>
 </body>
 </html>
