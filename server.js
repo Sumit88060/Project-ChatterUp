@@ -16,7 +16,7 @@ import { Message } from "./chatapp.schema.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// required for ES modules
+// ES module fix
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -27,14 +27,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ SERVE ROOT FILES (index.html, style.css)
-app.use(express.static(__dirname));
+/* =========================
+   STATIC FILES
+========================= */
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* =========================
    HOMEPAGE
 ========================= */
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 /* =========================
@@ -49,8 +52,7 @@ if (!fs.existsSync(uploadsPath)) {
 const storage = multer.diskStorage({
   destination: uploadsPath,
   filename: (req, file, cb) => {
-    const name = `${Date.now()}${path.extname(file.originalname)}`;
-    cb(null, name);
+    cb(null, Date.now() + path.extname(file.originalname));
   }
 });
 
@@ -64,7 +66,7 @@ app.post("/upload-avatar", upload.single("avatar"), (req, res) => {
 });
 
 /* =========================
-   SOCKET.IO SETUP
+   SOCKET.IO
 ========================= */
 const server = http.createServer(app);
 
@@ -78,7 +80,6 @@ const io = new Server(server, {
 let users = {};
 
 io.on("connection", socket => {
-  // load last 50 messages
   Message.find()
     .sort({ createdAt: 1 })
     .limit(50)
@@ -86,7 +87,6 @@ io.on("connection", socket => {
 
   socket.on("join", username => {
     users[socket.id] = username;
-
     io.emit("user-list", Object.values(users));
 
     socket.broadcast.emit("message", {
@@ -131,7 +131,7 @@ io.on("connection", socket => {
 });
 
 /* =========================
-   START SERVER (RENDER SAFE)
+   START SERVER
 ========================= */
 const startServer = async () => {
   try {
