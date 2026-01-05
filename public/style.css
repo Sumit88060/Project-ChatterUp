@@ -61,7 +61,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background-image: url('https://imgs.search.brave.com/IkXAVlY36-OnMK8dBAep9CvQIU7jICwWbbKkJDiwb7Y/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWFn/ZXMzLmFscGhhY29k/ZXJzLmNvbS8xMzIv/MTMyMjMwOC5qcGVn'); /* Optional background */
+  background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); /* Optional background */
   background-size: cover;
 }
 
